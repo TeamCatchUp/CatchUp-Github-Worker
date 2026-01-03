@@ -29,17 +29,33 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rsync
 
-      - name: Install rsync on OCI
+      - name: Install dependencies on OCI
         run: |
           ssh ${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }} << 'EOF'
-            # OCI 서버에 rsync 설치
+            # rsync 설치
             if ! command -v rsync &> /dev/null; then
-              echo "Installing rsync on OCI server..."
+              echo "Installing rsync..."
               sudo apt-get update
               sudo apt-get install -y rsync
-            else
-              echo "rsync is already installed"
             fi
+
+            # Docker 설치 확인
+            if ! command -v docker &> /dev/null; then
+              echo "Installing Docker..."
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+              sudo usermod -aG docker $USER
+              rm get-docker.sh
+            fi
+
+            # Docker Compose 설치 확인
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Installing Docker Compose..."
+              sudo apt-get update
+              sudo apt-get install -y docker-compose
+            fi
+
+            echo "All dependencies installed successfully"
           EOF
 
       - name: Create .env file on OCI
@@ -79,22 +95,22 @@ jobs:
             cd ~/CatchUp-Github-Worker
 
             # 기존 컨테이너 중지
-            docker-compose down
+            docker compose down
 
             # 사용하지 않는 Docker 이미지 정리
             echo "Cleaning up unused Docker images..."
             docker image prune -a -f
 
             # Docker Compose로 서비스 빌드 및 시작
-            docker-compose build --no-cache
-            docker-compose up -d
+            docker compose build --no-cache
+            docker compose up -d
 
             # 컨테이너 상태 확인
-            docker-compose ps
+            docker compose ps
 
             # Worker 로그 확인
             echo "=== Worker Logs ==="
-            docker-compose logs --tail=50 worker
+            docker compose logs --tail=50 worker
           EOF
 
       - name: Deployment completed
