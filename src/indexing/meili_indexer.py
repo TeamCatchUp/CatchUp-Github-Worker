@@ -74,7 +74,7 @@ class MeiliIndexer:
             index.update_embedders({
                 "default": {
                     "source": "userProvided",
-                    "dimensions": 1536  # OpenAI text-embedding-3-small dimension
+                    "dimensions": 3072  # OpenAI text-embedding-3-small dimension
                 }
             })
 
