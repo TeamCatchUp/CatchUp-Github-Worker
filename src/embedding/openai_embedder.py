@@ -10,8 +10,8 @@ settings = get_settings()
 class OpenAIEmbedder:
     def __init__(self):
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = "text-embedding-3-small"
-        self.dimensions = 1536
+        self.model = "text-embedding-3-large"
+        self.dimensions = 3072
 
     async def embed_documents(self, texts: List[str]) -> List[List[float]]:
         if not texts:
