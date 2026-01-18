@@ -6,6 +6,7 @@ from src.chunking.code_chunker import CodeChunker
 from src.embedding.openai_embedder import OpenAIEmbedder
 from src.indexing.meili_indexer import MeiliIndexer
 from src.config.settings import get_settings
+from src.utils.file_utils import get_file_category, format_file_path_with_chunk
 import logging
 
 router = RabbitRouter()
@@ -23,7 +24,7 @@ async def sync_repository_code(msg: GithubRepoSyncRequest):
 
     try:
         # 저장소별 인덱스 이름 생성
-        index_name = MeiliIndexer.get_index_name(msg.repo_name, msg.branch)
+        index_name = MeiliIndexer.get_index_name(msg.repo_name, msg.branch) + "_code"
         logger.info(f"Using index: {index_name}")
 
         # 저장소별 Indexer 생성
@@ -54,17 +55,14 @@ async def sync_repository_code(msg: GithubRepoSyncRequest):
             for i, chunk in enumerate(chunks):
                 # 2. Document 변환 (metadata 포함)
                 doc = GithubCodeDocument(
-                    id=GithubCodeDocument.generate_id(msg.repository_id, chunk.file_path, i),
-                    file_path=chunk.file_path,
-                    category="CODE",
-                    source=f"{msg.repo_name}@{msg.branch}",
-                    text=chunk.content,
-                    repository_id=msg.repository_id,
-                    owner=msg.owner,
-                    language=chunk.language,
-                    html_url=f"https://github.com/{msg.owner}/{msg.repo_name}/blob/{msg.branch}/{chunk.file_path}",
-                    metadata=chunk.metadata,  # metadata 전달
-                    _vectors={}
+                    source_type = 0,
+                    file_path = format_file_path_with_chunk(chunk.file_path, i),
+                    category = get_file_category(chunk.file_path, chunk.language),
+                    owner_repo_branch = f"{msg.owner}_{msg.repo_name}@{msg.branch}",
+                    text = chunk.content,
+                    html_url = f"https://github.com/{msg.owner}/{msg.repo_name}/blob/{msg.branch}/{chunk.file_path}",
+                    metadata = chunk.metadata,
+                    _vectors = {}
                 )
                 doc_buffer.append(doc)
 
